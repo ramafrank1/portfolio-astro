@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+qa-out/
+lh-out/
+test-results/
+qa-out-live/
+lh-out-live/
+.wrangler/
+.taste-skill/

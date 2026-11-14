@@ -1,0 +1,123 @@
+---
+// Hero: a ring of real screenshots around the headline, on a carbon "display case" field.
+// Frame positions are computed in CSS (sin/cos/atan of each frame's index), so nothing moves on load
+// and no inline styles are needed (the CSP forbids them).
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import { anchors, routes, t } from '@/i18n/ui';
+import { person } from '@/data/site';
+import { projects, type Lang } from '@/data/projects';
+import type { ImageMetadata } from 'astro';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const i = t(lang);
+
+// Interleave the projects' frames (desktop) and phone captures (gallery) so neighbours differ.
+type Frame = { src: ImageMetadata; slug: string; name: string; year: number; tall: boolean };
+const pools: Frame[][] = projects.map((p) => [
+  ...p.frames.map((src) => ({ src, slug: p.slug, name: p.name, year: p.year, tall: false })),
+  ...[p.cover.mobile, ...p.gallery.filter((g) => g.device === 'mobile')].map((g) => ({ src: g.src, slug: p.slug, name: p.name, year: p.year, tall: true })),
+]);
+const frames: Frame[] = [];
+for (let round = 0; frames.length < 20 && round < 12; round++) {
+  for (const pool of pools) if (pool[round] && frames.length < 20) frames.push(pool[round]);
+}
+---
+<section class="hero carbon" data-hero aria-labelledby="hero-title">
+  <div class="core">
+    <h1 id="hero-title" class="title">
+      <span class="line"><span class="line__in">{i.hero.lineA}</span></span>
+      <span class="line"><span class="line__in">{i.hero.lineB}</span></span>
+    </h1>
+    <p class="lead" data-hero-lead data-default={i.hero.lead}>{i.hero.lead}</p>
+    <a class="btn btn--accent" href={`#${anchors[lang].contact}`} data-track="cta_quote" data-track-where="hero">{i.hero.cta}<Icon name="ArrowRight" /></a>
+    {person.available && <p class="small avail"><span class="avail__dot" aria-hidden="true"></span>{i.hero.available}</p>}
+  </div>
+
+  <ul role="list" class="ring" aria-label={i.hero.ring} data-ring>
+    {frames.map((f) => (
+      <li class:list={['ring__item', { 'is-tall': f.tall }]}>
+        <a href={routes.project[lang](f.slug)} data-name={f.name} data-when={f.year} data-track="project_open" data-track-where="hero" data-project={f.slug}>
+          <Image src={f.src} alt={f.name} widths={[180, 320]} sizes="(min-width: 48rem) 150px, 88px" loading="eager" decoding="async" />
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    height: max(40rem, calc(100svh - var(--header-h)));
+    max-height: 64rem;
+    overflow: clip;
+    display: grid; place-items: center;
+    /* ellipse radii as fractions of the hero's width and height; --k ≈ ry/rx as a plain number (for the tilt) */
+    --rx: 39cqw; --ry: 34cqh; --k: 0.55; --n: 20;
+    container-type: size;
+  }
+
+  .ring { position: absolute; inset: 0; margin: 0; padding: 0; }
+  .ring__item {
+    --a: calc((var(--i) + 0.5) / var(--n) * 360deg);
+    --s: sin(var(--a));
+    --c: cos(var(--a));
+    position: absolute;
+    left: calc(50% + var(--rx) * var(--c));
+    top: calc(50% + var(--ry) * var(--s));
+    /* frames grow towards the viewer: ~100px at the top of the ring, ~150px at the bottom and the ends */
+    width: calc(150px - 50px * max(-1 * var(--s), 0));
+    aspect-ratio: 4 / 3;
+    translate: -50% -50%;
+    /* base along the curve: the tangent's angle, kept within ±30° (the +0.5 step offset keeps sin ≠ 0) */
+    rotate: clamp(-30deg, atan(calc(var(--k) * var(--c) / (-1 * var(--s)))), 30deg);
+    transition: opacity 0.35s var(--ease-out), scale 0.35s var(--ease-out);
+  }
+  .ring__item.is-tall { aspect-ratio: 3 / 4; width: calc(112px - 37px * max(-1 * var(--s), 0)); }
+  .ring__item a { display: block; width: 100%; height: 100%; }
+  .ring__item :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .ring:global(.is-pointing) .ring__item { opacity: 0.45; }
+  .ring:global(.is-pointing) .ring__item:global(.is-current) { opacity: 1; scale: 1.12; z-index: 2; }
+  .ring__item:nth-child(1) { --i: 0; } .ring__item:nth-child(2) { --i: 1; } .ring__item:nth-child(3) { --i: 2; }
+  .ring__item:nth-child(4) { --i: 3; } .ring__item:nth-child(5) { --i: 4; } .ring__item:nth-child(6) { --i: 5; }
+  .ring__item:nth-child(7) { --i: 6; } .ring__item:nth-child(8) { --i: 7; } .ring__item:nth-child(9) { --i: 8; }
+  .ring__item:nth-child(10) { --i: 9; } .ring__item:nth-child(11) { --i: 10; } .ring__item:nth-child(12) { --i: 11; }
+  .ring__item:nth-child(13) { --i: 12; } .ring__item:nth-child(14) { --i: 13; } .ring__item:nth-child(15) { --i: 14; }
+  .ring__item:nth-child(16) { --i: 15; } .ring__item:nth-child(17) { --i: 16; } .ring__item:nth-child(18) { --i: 17; }
+  .ring__item:nth-child(19) { --i: 18; } .ring__item:nth-child(20) { --i: 19; }
+
+  .core { position: relative; z-index: 1; display: grid; justify-items: center; gap: 1.5rem; max-width: 60rem; padding-inline: var(--margin); text-align: center; }
+  .title { font-size: clamp(2.75rem, 1.4rem + 4.4vw, 5.25rem); line-height: 0.95; letter-spacing: -0.045em; }
+  .line { display: block; white-space: nowrap; overflow: clip; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+  .line__in { display: block; }
+  .lead { max-width: 30ch; color: var(--on-carbon); min-height: 4.65em; }
+  .avail { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--on-carbon-muted); }
+  .avail__dot { width: 0.55rem; height: 0.55rem; background: var(--accent); }
+
+  /* Phone: the ring becomes a circle wider than the screen, read as two arcs above and below the text. */
+  @media (max-width: 47.99rem) {
+    .hero { --rx: 66cqw; --ry: 66cqw; --k: 1; --n: 12; height: max(38rem, calc(100svh - var(--header-h))); }
+    .ring__item { width: 88px; }
+    .ring__item.is-tall { width: 64px; }
+    /* Frames beyond 12, and the four that fall fully off-canvas (so focus can't scroll the hero). */
+    .ring__item:nth-child(n + 13), .ring__item:nth-child(1), .ring__item:nth-child(6), .ring__item:nth-child(7), .ring__item:nth-child(12) { display: none; }
+    .title { font-size: 9.4vw; }
+    .core { padding-inline: 1.75rem; }
+    .core .btn { width: 100%; }
+  }
+
+  /* Entrance: each headline line rises from behind its baseline; the rest follows. */
+  :global(.motion-ok) .hero .line__in { transform: translateY(105%); }
+  :global(.motion-ok) .hero .lead, :global(.motion-ok) .hero .core > .btn, :global(.motion-ok) .hero .avail { opacity: 0; transform: translateY(12px); }
+  :global(.motion-ok) .hero .ring__item { opacity: 0; scale: 0.9; }
+  :global(.motion-ok) .hero:global(.is-in) .line__in { transform: none; transition: transform 0.9s var(--ease-out); }
+  :global(.motion-ok) .hero:global(.is-in) .line:nth-child(2) .line__in { transition-delay: 0.11s; }
+  :global(.motion-ok) .hero:global(.is-in) .lead,
+  :global(.motion-ok) .hero:global(.is-in) .core > .btn,
+  :global(.motion-ok) .hero:global(.is-in) .avail { opacity: 1; transform: none; transition: opacity 0.7s 0.45s, transform 0.7s 0.45s var(--ease-out); }
+  :global(.motion-ok) .hero:global(.is-in) .ring__item { opacity: 1; scale: 1; transition: opacity 0.8s calc(0.25s + var(--i) * 0.03s), scale 0.9s calc(0.25s + var(--i) * 0.03s) var(--ease-out); }
+  :global(.motion-ok) .hero:global(.is-in) .ring:global(.is-settled) .ring__item { transition: opacity 0.35s, scale 0.35s var(--ease-out); }
+  :global(.motion-ok) .hero:global(.is-in) .ring:global(.is-pointing) .ring__item { opacity: 0.45; transition: opacity 0.35s, scale 0.35s var(--ease-out); }
+  :global(.motion-ok) .hero:global(.is-in) .ring:global(.is-pointing) .ring__item:global(.is-current) { opacity: 1; scale: 1.12; }
+</style>

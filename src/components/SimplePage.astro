@@ -1,0 +1,24 @@
+---
+import Base from '@/layouts/Base.astro';
+import Icon from './Icon.astro';
+import type { Lang } from '@/data/projects';
+
+interface Props { lang: Lang; title: string; text: string; back: string; backHref: string; alternates: Record<Lang, string>; noindex?: boolean; code?: string }
+const { lang, title, text, back, backHref, alternates, noindex = true, code } = Astro.props;
+---
+<Base lang={lang} title={`${title} | Ramiro Frank`} description={text} alternates={alternates} noindex={noindex}>
+  <section class="wrap simple">
+    {code && <p class="simple__code" aria-hidden="true">{code}<span>.</span></p>}
+    <h1>{title}</h1>
+    <p>{text}</p>
+    <a class="btn" href={backHref}>{back}<Icon name="ArrowRight" /></a>
+  </section>
+</Base>
+
+<style>
+  .simple { min-height: calc(100dvh - var(--header-h)); display: grid; align-content: center; justify-items: start; gap: 1.5rem; padding-block: 6rem; }
+  .simple__code { font-size: clamp(6rem, 3rem + 18vw, 18rem); font-weight: 200; line-height: 0.8; letter-spacing: -0.06em; }
+  .simple__code span { color: var(--accent); }
+  .simple h1 { font-size: var(--t-heading); max-width: 16ch; }
+  .simple p { font-size: var(--t-lead); font-weight: 300; color: var(--muted); max-width: 40ch; }
+</style>

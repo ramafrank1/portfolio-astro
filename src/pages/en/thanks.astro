@@ -1,0 +1,6 @@
+---
+import SimplePage from '@/components/SimplePage.astro';
+import { routes, t } from '@/i18n/ui';
+const i = t('en');
+---
+<SimplePage lang="en" title={i.thanks.title} text={i.thanks.text} back={i.thanks.back} backHref={routes.home.en} alternates={routes.thanks} />

@@ -1,0 +1,116 @@
+---
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import photo from '@/assets/ramiro-face.png';
+import { anchors, routes, t } from '@/i18n/ui';
+import type { Lang } from '@/data/projects';
+
+interface Props { lang: Lang; alternates: Record<Lang, string>; isHome: boolean }
+const { lang, alternates, isHome } = Astro.props;
+const i = t(lang);
+const a = anchors[lang];
+const other: Lang = lang === 'es' ? 'en' : 'es';
+const base = isHome ? '' : routes.home[lang];
+const links = [
+  { id: a.work, label: i.nav.work },
+  { id: a.services, label: i.nav.services },
+  { id: a.process, label: i.nav.process },
+  { id: a.about, label: i.nav.about },
+  { id: a.contact, label: i.nav.contact },
+];
+---
+<header class="site-header" data-header>
+  <div class="bar">
+    <a class="brand" href={routes.home[lang]} aria-label={`Ramiro Frank — ${i.nav.home}`}>
+      <Image src={photo} alt="" widths={[64, 96]} sizes="2rem" loading="eager" decoding="async" class="brand__photo" />
+      <span>Ramiro Frank</span>
+    </a>
+
+    <nav class="nav" aria-label={i.nav.primary}>
+      <ul role="list" class="nav__list" id="nav-list">
+        {links.map((l) => (
+          <li><a class="nav__link" href={`${base}#${l.id}`} data-nav={l.id}>{l.label}</a></li>
+        ))}
+        <li class="nav__mobile-only">
+          <a class="btn btn--accent" href={`${base}#${a.contact}`} data-track="cta_quote" data-track-where="menu">{i.nav.cta}<Icon name="ArrowRight" /></a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="tools">
+      <a class="tool" href={alternates[other]} hreflang={other === 'es' ? 'es-AR' : 'en'} lang={other} data-track="lang_switch">
+        {i.lang.code}<span class="sr-only"> — {i.lang.switchLabel}</span>
+      </a>
+      <a class="btn btn--accent header-cta" href={`${base}#${a.contact}`} data-track="cta_quote" data-track-where="header">{i.nav.cta}</a>
+      <button class="tool menu-toggle" type="button" aria-expanded="false" aria-controls="nav-list" data-menu-toggle data-label-open={i.nav.menu} data-label-close={i.nav.close}>
+        <span data-menu-label>{i.nav.menu}</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky; top: 0; z-index: 50;
+    height: var(--header-h);
+    background: var(--bg);
+    transition: background-color 0.3s;
+  }
+  .site-header:global(.is-scrolled) { background: var(--surface); }
+  .bar { height: 100%; display: flex; align-items: center; gap: 1.5rem; padding-inline: var(--margin); max-width: 90rem; margin-inline: auto; }
+
+  .brand { display: inline-flex; align-items: center; gap: 0.7rem; margin-right: auto; text-decoration: none; font-size: var(--t-body); font-weight: 450; letter-spacing: -0.01em; }
+  .brand :global(.brand__photo) { width: 2rem; height: 2rem; object-fit: cover; filter: grayscale(1) contrast(1.06); transition: filter 0.4s; }
+  .brand:hover :global(.brand__photo) { filter: none; }
+
+  .nav__list { display: flex; gap: 0.25rem; list-style: none; padding: 0; }
+  .nav__link { display: block; padding: 0.5rem 0.7rem; font-size: var(--t-small); text-decoration: none; color: var(--muted); transition: color 0.2s; }
+  .nav__link:hover, .nav__link:global(.is-active) { color: var(--ink); }
+  .nav__link:global(.is-active) { text-decoration: underline; text-underline-offset: 0.4em; }
+  .nav__mobile-only { display: none; }
+
+  .tools { display: flex; align-items: center; gap: 0.5rem; }
+  .tool {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 2.75rem; min-height: 2.75rem; padding: 0 0.6rem;
+    border: 0; background: transparent; font-size: var(--t-small); text-decoration: none; color: var(--ink);
+  }
+  .tool:hover { background: var(--surface-2); }
+  .header-cta { min-height: 2.5rem; padding: 0.5rem 1rem; font-size: var(--t-small); }
+  .menu-toggle { display: none; }
+
+  @media (max-width: 63.99rem) {
+    .menu-toggle { display: inline-flex; }
+    .header-cta { display: none; }
+    .nav__list {
+      position: fixed; inset: var(--header-h) 0 auto 0; z-index: 49;
+      height: calc(100dvh - var(--header-h));
+      flex-direction: column; gap: 0;
+      padding: 1.5rem var(--margin) 3rem;
+      background: var(--carbon); color: var(--on-carbon);
+      overflow-y: auto;
+      visibility: hidden;
+      clip-path: inset(0 0 100% 0);
+      transition: clip-path 0.5s var(--ease-in-out), visibility 0s 0.5s;
+    }
+    .nav__list:global(.is-open) { visibility: visible; clip-path: inset(0 0 0 0); transition: clip-path 0.5s var(--ease-in-out), visibility 0s; }
+    .nav__link { padding: 0.6rem 0; font-size: var(--t-heading); font-weight: 300; letter-spacing: -0.035em; color: var(--on-carbon); }
+    .nav__link:hover { color: var(--accent); }
+    .nav__mobile-only { display: block; padding-top: 2rem; }
+    .nav__mobile-only .btn { width: 100%; min-height: 3.5rem; }
+    .nav__list li { opacity: 0; transform: translateY(12px); transition: opacity 0.4s, transform 0.5s var(--ease-out); }
+    .nav__list:global(.is-open) li { opacity: 1; transform: none; }
+    .nav__list:global(.is-open) li:nth-child(2) { transition-delay: 0.04s; }
+    .nav__list:global(.is-open) li:nth-child(3) { transition-delay: 0.08s; }
+    .nav__list:global(.is-open) li:nth-child(4) { transition-delay: 0.12s; }
+    .nav__list:global(.is-open) li:nth-child(5) { transition-delay: 0.16s; }
+    .nav__list:global(.is-open) li:nth-child(6) { transition-delay: 0.2s; }
+  }
+  /* Without JS the mobile menu can't open: show the links inline instead. */
+  @media (max-width: 63.99rem) {
+    :global(html:not(.js)) .nav__list { position: static; height: auto; visibility: visible; clip-path: none; flex-direction: row; padding: 0; background: none; color: inherit; overflow-x: auto; }
+    :global(html:not(.js)) .menu-toggle, :global(html:not(.js)) .nav__mobile-only { display: none; }
+    :global(html:not(.js)) .nav__list li { opacity: 1; transform: none; }
+    :global(html:not(.js)) .nav__link { font-size: var(--t-small); padding: 0.5rem; color: var(--ink); }
+    :global(html:not(.js)) .brand span { display: none; }
+  }
+</style>

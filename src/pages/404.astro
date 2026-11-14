@@ -1,0 +1,16 @@
+---
+// The host serves this for any unknown URL. Bilingual copy because we can't know the visitor's language.
+import SimplePage from '@/components/SimplePage.astro';
+import { routes, t } from '@/i18n/ui';
+const es = t('es').notFound;
+const en = t('en').notFound;
+---
+<SimplePage
+  lang="es"
+  code="404"
+  title={es.title}
+  text={`${es.text} — ${en.title}.`}
+  back={es.back}
+  backHref={routes.home.es}
+  alternates={{ es: routes.home.es, en: routes.home.en }}
+/>

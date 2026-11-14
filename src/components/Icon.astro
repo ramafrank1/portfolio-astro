@@ -1,0 +1,14 @@
+---
+// Inline Lucide icon (ISC license) rendered at build time — no runtime JS.
+import * as icons from 'lucide-static';
+
+interface Props { name: keyof typeof icons; size?: number; label?: string; class?: string }
+const { name, size = 20, label, class: cls } = Astro.props;
+const raw = String(icons[name] ?? '');
+const svg = raw
+  .replace(/<!--.*?-->/gs, '')
+  .replace(/\s(width|height)="24"/g, ` $1="${size}"`)
+  .replace(/class="([^"]*)"/, `class="$1 ${cls ?? ''}"`)
+  .replace('<svg', label ? `<svg role="img" aria-label="${label}"` : '<svg aria-hidden="true" focusable="false"');
+---
+<Fragment set:html={svg} />

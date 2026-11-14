@@ -1,0 +1,191 @@
+---
+// Contact: a carbon field with a drifting strip of real screenshots, and the page's one live thing —
+// a configurator: pick your kind of business and what you need; it shows my closest real project and
+// writes the WhatsApp message. Without JS, the button opens WhatsApp with a general message.
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import { anchors, routes, t } from '@/i18n/ui';
+import { contact, contactForm, whatsappLink } from '@/data/site';
+import { businessTypes, needs } from '@/data/content';
+import { getProject, projects, type Lang } from '@/data/projects';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const i = t(lang);
+const c = i.contact;
+const f = c.fields;
+const hasForm = Boolean(contactForm.accessKey);
+const thanksUrl = new URL(routes.thanks[lang], Astro.site).href;
+const template = c.waMessage('{b}', '{n}');
+const closestSlugs = [...new Set(businessTypes.map((b) => b.project))];
+const stripFrames = projects.flatMap((p) => p.frames.slice(0, 3).map((src) => ({ src, name: p.name })));
+---
+<section class="section contact carbon" id={anchors[lang].contact} aria-labelledby="contact-title">
+  <div class="drift" aria-hidden="true">
+    <div class="drift__track">
+      {[0, 1].map(() => stripFrames.map((fr) => (
+        <Image src={fr.src} alt="" widths={[260, 480]} sizes="240px" loading="lazy" decoding="async" />
+      )))}
+    </div>
+  </div>
+
+  <div class="wrap drift-ctl">
+    <button type="button" class="toggle" data-drift-toggle data-pause={c.pauseStrip} data-play={c.playStrip} hidden>{c.pauseStrip}</button>
+  </div>
+
+  <div class="wrap">
+    <h2 id="contact-title" class="heading contact__title" data-reveal>{c.title}</h2>
+    <p class="contact__lead" data-reveal>{c.lead}</p>
+
+    <div class="config" data-config data-template={template} data-wa={contact.whatsapp} data-reveal>
+      <label class="cell">
+        <span class="cell__label small">{c.business}</span>
+        <select data-config-business>
+          {businessTypes.map((b) => <option value={b.id} data-project={b.project}>{b.label[lang]}</option>)}
+        </select>
+        <Icon name="ChevronDown" size={18} class="cell__chev" />
+      </label>
+      <label class="cell">
+        <span class="cell__label small">{c.need}</span>
+        <select data-config-need>
+          {needs.map((n) => <option>{n[lang]}</option>)}
+        </select>
+        <Icon name="ChevronDown" size={18} class="cell__chev" />
+      </label>
+      <a class="cell cell--go" href={whatsappLink(c.waDefault)} target="_blank" rel="noopener" data-config-go data-track="contact_whatsapp" data-track-where="configurator">
+        {c.send}<Icon name="ArrowUpRight" />
+      </a>
+    </div>
+
+    <div class="closest" data-reveal aria-live="polite">
+      <p class="small soft">{c.closest}</p>
+      {closestSlugs.map((slug, n) => {
+        const p = getProject(slug)!;
+        return (
+          <a class="closest__item" href={routes.project[lang](slug)} data-closest={slug} hidden={n !== 0} data-track="project_open" data-track-where="configurator" data-project={slug}>
+            <Image src={p.frames[0]} alt="" widths={[200, 400]} sizes="200px" loading="lazy" decoding="async" />
+            <span>
+              <span class="closest__name">{p.name}</span>
+              <span class="small soft">{p.kind[lang]}</span>
+            </span>
+            <Icon name="ArrowRight" />
+          </a>
+        );
+      })}
+    </div>
+
+    <div class="channels small" data-reveal>
+      <p>{c.orEmail} <a href={`mailto:${contact.email}`} data-track="contact_email" data-track-where="contact">{contact.email}</a>
+        <button type="button" class="copy" data-copy={contact.email} data-copied={lang === 'es' ? 'Copiado' : 'Copied'} aria-label={lang === 'es' ? 'Copiar correo' : 'Copy email'} hidden><span data-copy-label>{lang === 'es' ? 'Copiar' : 'Copy'}</span></button>
+      </p>
+      <p>{c.social}
+        <a href={contact.linkedin} target="_blank" rel="noopener me" data-track="social_linkedin">LinkedIn</a>,
+        <a href={contact.github} target="_blank" rel="noopener me" data-track="social_github">GitHub</a>,
+        <a href={contact.instagram} target="_blank" rel="noopener me" data-track="social_instagram">Instagram</a>
+        · WhatsApp {contact.whatsappDisplay}
+      </p>
+    </div>
+
+    {hasForm && (
+      <form class="form" name="contacto" method="POST" action={contactForm.endpoint} data-contact-form data-err-network={c.errors.network} data-sending={f.sending} novalidate data-reveal>
+        <h3 class="form__title">{c.formTitle}</h3>
+        <input type="hidden" name="access_key" value={contactForm.accessKey} />
+        <input type="hidden" name="subject" value={lang === 'es' ? 'Nueva consulta desde el portfolio' : 'New inquiry from the portfolio (EN)'} />
+        <input type="hidden" name="from_name" value="Portfolio Ramiro Frank" />
+        <input type="hidden" name="redirect" value={thanksUrl} />
+        <input type="hidden" name="idioma" value={lang} />
+        <p class="hp" aria-hidden="true"><label>No completar: <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" /></label></p>
+
+        <div class="field">
+          <label class="field__label" for="f-name">{f.name}</label>
+          <input id="f-name" name="nombre" type="text" autocomplete="name" required maxlength="80" data-error={c.errors.name} aria-describedby="f-name-err" />
+          <p class="field__error" id="f-name-err" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="f-contact">{f.contact}</label>
+          <input id="f-contact" name="contacto" type="text" autocomplete="email" inputmode="email" required maxlength="120" data-error={c.errors.contact} aria-describedby="f-contact-hint f-contact-err" />
+          <p class="field__hint small soft" id="f-contact-hint">{f.contactHint}</p>
+          <p class="field__error" id="f-contact-err" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="f-type">{f.type}</label>
+          <select id="f-type" name="tipo">{c.projectTypes.map((type) => <option>{type}</option>)}</select>
+        </div>
+        <div class="field field--wide">
+          <label class="field__label" for="f-msg">{f.message}</label>
+          <textarea id="f-msg" name="mensaje" rows="5" required minlength="10" maxlength="2000" data-error={c.errors.message} aria-describedby="f-msg-hint f-msg-err"></textarea>
+          <p class="field__hint small soft" id="f-msg-hint">{f.messageHint}</p>
+          <p class="field__error" id="f-msg-err" aria-live="polite"></p>
+        </div>
+        <button class="btn btn--accent submit" type="submit" data-track="form_submit_attempt"><span data-submit-label>{f.submit}</span><Icon name="Send" /></button>
+        <p class="form__status" role="status" aria-live="polite" data-form-status></p>
+        <p class="form__success" data-form-success hidden tabindex="-1"><Icon name="CircleCheck" />{c.success}</p>
+        <p class="small soft">{f.privacy}</p>
+      </form>
+    )}
+  </div>
+</section>
+
+<style>
+  .contact { padding-top: 3rem; overflow: hidden; }
+  /* A strip of small captures drifting sideways (a marquee); paused for reduced motion. */
+  .drift { overflow: hidden; }
+  .drift-ctl { margin-block: 0.75rem clamp(2.5rem, 1.5rem + 4vw, 5rem); }
+  .drift-ctl .toggle { margin-left: 0; }
+  :global(.drift-paused) .drift__track { animation-play-state: paused !important; }
+  .drift__track { display: flex; gap: 8px; width: max-content; }
+  .drift__track :global(img) { height: 150px; width: auto; flex: none; object-fit: cover; object-position: top; opacity: 0.85; }
+  :global(.motion-ok) .drift__track { animation: drift 90s linear infinite; }
+  @keyframes drift { to { transform: translateX(-50%); } }
+  @media (max-width: 47.99rem) { .drift__track :global(img) { height: 110px; } .cell select, .cell--go { font-size: var(--t-body); font-weight: 400; } .cell { min-height: 5rem; } }
+
+  .contact__title { max-width: 16ch; }
+  .contact__lead { margin-top: 1.25rem; max-width: 52ch; color: var(--on-carbon-muted); }
+
+  .config { display: grid; gap: 8px; margin-top: 2.5rem; }
+  @media (min-width: 48rem) { .config { grid-template-columns: 1fr 1fr 1fr; } }
+  .cell { position: relative; display: grid; align-content: center; min-height: 6rem; padding: 0.9rem 1.2rem; background: var(--carbon-2); transition: background-color 0.2s; }
+  .cell:focus-within { background: #2b2a31; }
+  .cell__label { color: var(--on-carbon-muted); }
+  .cell select { appearance: none; width: 100%; padding: 0.3rem 2rem 0 0; border: 0; background: transparent; color: var(--on-carbon); font-size: var(--t-lead); font-weight: 300; letter-spacing: -0.01em; cursor: pointer; }
+  .cell select:focus-visible { outline: none; }
+  .cell:has(select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cell select option { color: var(--ink); background: var(--surface); }
+  .cell :global(.cell__chev) { position: absolute; right: 1.2rem; bottom: 1.3rem; color: var(--on-carbon-muted); pointer-events: none; }
+  .cell--go { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--accent); color: var(--on-accent); font-size: var(--t-lead); font-weight: 400; text-decoration: none; }
+  .cell--go:hover { background: #ffbb1a; }
+  .cell--go:active { transform: scale(0.99); }
+  .cell--go :global(svg) { width: 1.4em; height: 1.4em; transition: transform 0.3s var(--ease-out); }
+  .cell--go:hover :global(svg) { transform: translate(3px, -3px); }
+
+  .closest { margin-top: 2.5rem; display: grid; gap: 0.75rem; }
+  .closest__item { display: flex; align-items: center; gap: 1.25rem; max-width: 40rem; padding: 0.5rem; margin-left: -0.5rem; text-decoration: none; transition: background-color 0.2s; }
+  .closest__item:hover { background: var(--carbon-2); }
+  .closest__item :global(img) { width: 8rem; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; flex: none; }
+  .closest__item > span { display: grid; gap: 0.2rem; flex: 1; }
+  .closest__name { font-size: var(--t-lead); font-weight: 300; }
+  .closest__item > :global(svg) { flex: none; transition: transform 0.3s var(--ease-out); }
+  .closest__item:hover > :global(svg) { transform: translateX(4px); }
+
+  .channels { display: grid; gap: 0.5rem; margin-top: 3rem; color: var(--on-carbon-muted); }
+  .channels a { color: var(--on-carbon); }
+  .copy { margin-left: 0.5rem; padding: 0.3rem 0.7rem; border: 0; background: var(--carbon-2); color: var(--on-carbon); font-size: var(--t-small); }
+  .copy:hover { background: #2b2a31; }
+
+  .form { display: grid; gap: 1.25rem; margin-top: 4rem; max-width: 56rem; }
+  @media (min-width: 48rem) { .form { grid-template-columns: 1fr 1fr; } .form__title, .field--wide, .submit, .form__status, .form__success, .form > p:last-child { grid-column: 1 / -1; } }
+  .form__title { font-size: var(--t-lead); font-weight: 300; }
+  .hp { display: none; }
+  .field { display: grid; gap: 0.4rem; }
+  .field__label { font-size: var(--t-small); }
+  .field__error { font-size: var(--t-small); color: var(--accent); }
+  .field__error:empty { display: none; }
+  .form input, .form textarea, .form select { width: 100%; min-height: 3rem; padding: 0.7rem 0.9rem; border: 0; border-radius: 0; background: var(--carbon-2); color: var(--on-carbon); }
+  .form textarea { resize: vertical; min-height: 8rem; }
+  .form input:focus-visible, .form textarea:focus-visible, .form select:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+  .submit { justify-self: start; }
+  .submit[disabled] { opacity: 0.7; cursor: progress; }
+  .form__status { color: var(--accent); }
+  .form__status:empty { display: none; }
+  .form__success { display: flex; gap: 0.6rem; align-items: center; padding: 1rem; background: var(--carbon-2); }
+</style>

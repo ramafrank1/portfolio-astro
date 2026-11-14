@@ -1,0 +1,53 @@
+---
+import Base from '@/layouts/Base.astro';
+import Hero from './Hero.astro';
+import Projects from './Projects.astro';
+import Services from './Services.astro';
+import Process from './Process.astro';
+import About from './About.astro';
+import Contact from './Contact.astro';
+import { routes, t } from '@/i18n/ui';
+import { primaryServices, secondaryServices } from '@/data/content';
+import type { Lang } from '@/data/projects';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const i = t(lang);
+const site = Astro.site!;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Ramiro Frank',
+    url: new URL(routes.home[lang], site).href,
+    inLanguage: i.htmlLang,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ProfessionalService',
+    name: lang === 'es' ? 'Ramiro Frank — Desarrollo web' : 'Ramiro Frank — Web development',
+    url: new URL(routes.home[lang], site).href,
+    description: i.meta.description,
+    founder: { '@id': new URL('/#person', site).href },
+    areaServed: lang === 'es' ? ['Argentina', 'Internacional (remoto)'] : ['Argentina', 'Worldwide (remote)'],
+    availableLanguage: ['es', 'en'],
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: i.services.title,
+      itemListElement: [...primaryServices.map((s) => s.title[lang]), ...secondaryServices.map((s) => s.title[lang])].map((name) => ({
+        '@type': 'Offer',
+        itemOffered: { '@type': 'Service', name },
+      })),
+    },
+  },
+];
+---
+<Base lang={lang} title={i.meta.title} description={i.meta.description} alternates={routes.home} jsonLd={jsonLd} isHome>
+  <Hero lang={lang} />
+  <Projects lang={lang} />
+  <Services lang={lang} />
+  <Process lang={lang} />
+  <About lang={lang} />
+  <Contact lang={lang} />
+</Base>

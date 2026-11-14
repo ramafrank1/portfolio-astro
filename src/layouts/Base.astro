@@ -1,0 +1,121 @@
+---
+import '@fontsource-variable/inter';
+import '@/styles/global.css';
+import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
+
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
+import { t } from '@/i18n/ui';
+import { analytics, contact, person } from '@/data/site';
+import type { Lang } from '@/data/projects';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  /** Equivalent paths in each language, for hreflang and the language switcher. */
+  alternates: Record<Lang, string>;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  jsonLd?: Record<string, unknown>[];
+  noindex?: boolean;
+  isHome?: boolean;
+}
+
+const { lang, title, description, alternates, ogImage, ogType = 'website', jsonLd = [], noindex = false, isHome = false } = Astro.props;
+const i = t(lang);
+const site = Astro.site!;
+const canonical = new URL(alternates[lang], site).href;
+const og = new URL(ogImage ?? (lang === 'es' ? '/og/og-es.png' : '/og/og-en.png'), site).href;
+
+const personLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  '@id': new URL('/#person', site).href,
+  name: person.name,
+  jobTitle: lang === 'es' ? 'Desarrollador web freelance' : 'Freelance web developer',
+  url: new URL('/', site).href,
+  email: `mailto:${contact.email}`,
+  address: { '@type': 'PostalAddress', addressLocality: 'Buenos Aires', addressCountry: 'AR' },
+  knowsLanguage: ['es', 'en'],
+  sameAs: [contact.linkedin, contact.github, contact.instagram],
+};
+const ld = [personLd, ...jsonLd];
+---
+<!doctype html>
+<html lang={i.htmlLang} data-lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex ? (
+      <meta name="robots" content="noindex" />
+    ) : (
+      <>
+        <link rel="canonical" href={canonical} />
+        <link rel="alternate" hreflang="es-AR" href={new URL(alternates.es, site).href} />
+        <link rel="alternate" hreflang="en" href={new URL(alternates.en, site).href} />
+        <link rel="alternate" hreflang="x-default" href={new URL(alternates.es, site).href} />
+      </>
+    )}
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="Ramiro Frank" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={og} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={i.ogLocale} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#f6f8f7" />
+
+    <!-- Inline so the browser knows about the opt-in before it reveals the page (not after a stylesheet loads). -->
+    <style is:inline>@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }</style>
+    <link rel="preload" href={interWoff2} as="font" type="font/woff2" crossorigin />
+
+    <script is:inline>
+      // Capability flags before first paint, so reveal states never flash.
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('motion-ok');
+        // If the page script never starts (blocked, failed), drop the hidden entrance states so content shows.
+        setTimeout(function () { if (!d.dataset.ready) d.classList.remove('motion-ok'); }, 4000);
+        // A cross-page view transition is aborted (harmlessly) when the user navigates again before
+        // it ends; handle its promises so that isn't reported as an error.
+        var quiet = function (e) {
+          var vt = e.viewTransition;
+          if (vt) [vt.ready, vt.finished, vt.updateCallbackDone].forEach(function (p) { p && p.catch(function () {}); });
+        };
+        window.addEventListener('pageswap', quiet);
+        window.addEventListener('pagereveal', quiet);
+      })();
+    </script>
+
+    {ld.map((item) => <script type="application/ld+json" set:html={JSON.stringify(item)} />)}
+
+    {analytics.umamiWebsiteId && (
+      <script defer src={analytics.umamiSrc} data-website-id={analytics.umamiWebsiteId} data-do-not-track="true"></script>
+    )}
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{i.skip}</a>
+    <Header lang={lang} alternates={alternates} isHome={isHome} />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+
+    <script>
+      import '@/scripts/site';
+    </script>
+  </body>
+</html>

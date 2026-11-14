@@ -1,0 +1,80 @@
+---
+import { Image } from 'astro:assets';
+import { anchors, routes, t } from '@/i18n/ui';
+import { primaryServices, secondaryServices } from '@/data/content';
+import { getProject, statusLabel, type Lang } from '@/data/projects';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const i = t(lang);
+---
+<section class="section services" id={anchors[lang].services} aria-labelledby="services-title">
+  <div class="wrap services__grid">
+    <h2 id="services-title" class="heading" data-reveal>{i.services.title}</h2>
+
+    <div class="lists">
+      <h3 class="group soft" data-reveal>{i.services.main}</h3>
+      <ul role="list" class="rows">
+        {primaryServices.map((s) => {
+          const p = getProject(s.proof[0])!;
+          return (
+            <li class="row" data-reveal>
+              <a class="row__link" href={routes.project[lang](p.slug)} data-track="project_open" data-track-where={`service_${s.id}`} data-project={p.slug}>
+                <span class="row__main">
+                  <Image src={p.frames[0]} alt="" widths={[48]} sizes="24px" loading="lazy" decoding="async" class="row__thumb" />
+                  <span>
+                    <span class="row__title">{s.title[lang]}</span>
+                    <span class="row__line">{s.line[lang]}</span>
+                  </span>
+                </span>
+                <span class="row__value soft">{s.proof.map((slug) => { const q = getProject(slug)!; return q.sold ? q.name : `${q.name} (${statusLabel[q.status][lang].toLowerCase()})`; }).join(' · ')}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+
+      <h3 class="group soft" data-reveal>{i.services.also}</h3>
+      <ul role="list" class="rows">
+        {secondaryServices.map((s) => (
+          <li class="row row--plain" data-reveal>
+            <span class="row__main">
+              <span class="row__dot" aria-hidden="true"></span>
+              <span>
+                <span class="row__title">{s.title[lang]}</span>
+                <span class="row__line">{s.line[lang]}</span>
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .services__grid { display: grid; gap: 3rem; }
+  @media (min-width: 64rem) {
+    .services__grid { grid-template-columns: repeat(12, 1fr); column-gap: 1.25rem; }
+    .services__grid > h2 { grid-column: 1 / 5; }
+    .lists { grid-column: 6 / 13; }
+  }
+  .group { font-size: var(--t-body); font-weight: 400; letter-spacing: 0; margin: 0 0 0.75rem; }
+  .group:not(:first-child) { margin-top: 3rem; }
+  .rows { display: grid; gap: 0.25rem; }
+
+  .row__link, .row--plain { display: flex; justify-content: space-between; align-items: baseline; gap: 1.5rem; padding: 0.9rem 0.75rem; margin-inline: -0.75rem; text-decoration: none; }
+  .row__link { transition: background-color 0.25s var(--ease-out); }
+  .row__link:hover { background: var(--surface); }
+  .row__main { display: flex; gap: 0.9rem; align-items: baseline; min-width: 0; }
+  .row__main :global(.row__thumb) { flex: none; width: 1.5rem; height: 1.5rem; object-fit: cover; object-position: top; translate: 0 0.3em; }
+  .row__dot { flex: none; width: 1.5rem; height: 0.6rem; background: var(--ink); translate: 0 -0.15em; }
+  .row__title { display: block; font-size: var(--t-lead); font-weight: 300; letter-spacing: -0.015em; line-height: 1.25; }
+  .row__line { display: block; margin-top: 0.3rem; max-width: 52ch; }
+  .row__value { flex: none; font-size: var(--t-small); text-align: right; }
+  .row__link:hover .row__value { color: var(--ink); }
+  @media (max-width: 47.99rem) {
+    .row__link { flex-direction: column; gap: 0.4rem; }
+    .row__value { text-align: left; padding-left: 2.4rem; }
+  }
+</style>
